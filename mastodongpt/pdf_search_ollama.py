@@ -1,47 +1,77 @@
+import json
+import os
+
 from flask import jsonify
-from pdfminer.high_level import extract_text
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain.chains.retrieval import create_retrieval_chain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_community.llms import Ollama
-from langchain.chains import create_history_aware_retriever
-from langchain_core.prompts import MessagesPlaceholder
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pdfminer.high_level import extract_text
+
+import google.generativeai as genai
+from datetime import datetime
+
+from mastodongpt.DbService import get_links
+from mastodongpt.contentReader import fetch_clean_text
+import uuid
 
 
+os.environ["GOOGLE_API_KEY"] = "<API KEY>"
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 # Load LLaMA model and tokenizer
-model = Ollama(model="llama3")
+model= ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash-thinking-exp-01-21",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    # other params...
+)
+#model = Ollama(model="llama3")
 #model = Ollama(model="deepseek-r1")
 # Generate embeddings
 #embedding_model = OllamaEmbeddings(model="nomic-embed-text", show_progress=True)
 embedding_model = OllamaEmbeddings(model="paraphrase-multilingual", show_progress=True)
 local_model_enabled= False
-chat_history = []
-chat_messages = []
+
+local_storage={}
+
 
 # Load PDF and extract text
 def extract_text_from_pdf(pdf_path):
     text = extract_text(pdf_path)
     return text
 
-def clear_chat():
-    global chat_history
-    chat_history = []
-    global chat_messages
-    chat_messages = []
+def clear_chat_schedule():
+    global local_storage
+    for key in list(local_storage):
+        if 'timestamp' in local_storage[key]:
+            last_active = local_storage[key]['timestamp']
+            if (datetime.now() - last_active).total_seconds() > 3600:
+                local_storage.pop(key)
+
+def clear_chat(sessionId):
+    if sessionId in local_storage:
+        local_storage.pop(sessionId)
 
 # Load your PDF
 def load_data():
-    pdf_path = 'D:\\DepartmentofComputerScience.pdf'
-    text = extract_text_from_pdf(pdf_path)
-
-    # Split text into chunks
+    data = get_links()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=256, chunk_overlap=10)
-    texts = text_splitter.split_text(text)
+    texts = []
+    for entry in data:
+        url = entry['value']
+        if entry['type'] == 'web_url':
+            text = fetch_clean_text(url)
+        else:
+            text = extract_text_from_pdf(url)
+        texts.extend(text_splitter.split_text(text))
 
     # Create a documents
     documents = [Document(page_content=text) for text in texts]
@@ -50,7 +80,20 @@ def load_data():
     faiss_vector_store = FAISS.from_documents(documents, embedding_model)
     faiss_vector_store.save_local("test_local")
 
-def rag_query(query):
+
+
+
+def rag_query(query,sessionId):
+
+    if sessionId is None or sessionId not in local_storage:
+        sessionId = str(uuid.uuid4())
+        local_storage[sessionId]={}
+        chat_history = []
+        chat_messages = []
+    else:
+        session=local_storage[sessionId]
+        chat_history=session['chat_history']
+        chat_messages=session['chat_messages']
 
     system_prompt = (
         "You are an assistant for question-answering tasks. "
@@ -97,11 +140,12 @@ def rag_query(query):
 
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
-    ai_msg_1 = rag_chain.invoke({"input": query, "chat_history": chat_history})
-    chat_history.extend([HumanMessage(content=query), AIMessage(ai_msg_1["answer"])])
+    ai_msg = rag_chain.invoke({"input": query, "chat_history": chat_history})
+    chat_history.extend([HumanMessage(content=query), AIMessage(ai_msg["answer"])])
     chat_messages.append({"sender": "User", "message": query})
-    chat_messages.append({"sender": "Bot", "message": ai_msg_1['answer']})
+    chat_messages.append({"sender": "Bot", "message": ai_msg['answer'],"id":sessionId})
     response = jsonify(chat_messages)
+    local_storage[sessionId]['chat_history']=chat_history
+    local_storage[sessionId]['chat_messages']=chat_messages
+    local_storage[sessionId]['timestamp']=datetime.now()
     return response
-
-load_data()
