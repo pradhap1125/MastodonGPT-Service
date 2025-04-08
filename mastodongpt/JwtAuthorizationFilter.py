@@ -1,7 +1,7 @@
 import time
 
 from flask import request, jsonify
-from JwtService import decode_unsigned_jwt
+from mastodongpt.JwtService import decode_unsigned_jwt
 from mastodongpt.DbService import validate_userName
 from functools import wraps
 

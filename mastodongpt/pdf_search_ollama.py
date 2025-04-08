@@ -17,12 +17,12 @@ from pdfminer.high_level import extract_text
 import google.generativeai as genai
 from datetime import datetime
 
-from mastodongpt.DbService import get_links
+from mastodongpt.DbService import get_links, update_audit_query
 from mastodongpt.contentReader import fetch_clean_text
 import uuid
 
 
-os.environ["GOOGLE_API_KEY"] = "<API KEY>"
+os.environ["GOOGLE_API_KEY"] = "<API_KEY>"
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 # Load LLaMA model and tokenizer
 model= ChatGoogleGenerativeAI(
@@ -84,7 +84,7 @@ def load_data():
 
 
 def rag_query(query,sessionId):
-
+    update_audit_query(query)
     if sessionId is None or sessionId not in local_storage:
         sessionId = str(uuid.uuid4())
         local_storage[sessionId]={}
@@ -96,13 +96,18 @@ def rag_query(query,sessionId):
         chat_messages=session['chat_messages']
 
     system_prompt = (
-        "You are an assistant for question-answering tasks. "
-        "Use the following pieces of retrieved context to answer "
-        "the question. If you don't know the answer, say that you "
-        "don't know. Use three sentences maximum and keep the "
-        "answer concise. If the user greets you, you should ignore the context and greet back. "
+        "You are a **strict context-bound assistant**."
+        "You MUST answer ONLY if the answer is clearly present in the provided context below. "
+        "If the answer is not in the context or the question is unrelated, respond with:"
+        "**\"I'm sorry, I can only answer questions based on the provided information.\"**"
+        "Do not guess or make assumptions. "
         "\n\n"
+        "If the user greets you, greet them back politely."
+        "Answer in 3 sentences or less."
+        "\n\n"
+        "--- Context Start ---"
         "{context}"
+        "--- Context End ---"
     )
 
     contextualize_q_system_prompt = (

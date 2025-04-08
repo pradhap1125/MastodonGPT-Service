@@ -1,7 +1,7 @@
 from flask import jsonify
 from psycopg_pool import ConnectionPool
 
-from JwtService import create_unsigned_jwt
+from mastodongpt.JwtService import create_unsigned_jwt
 from mastodongpt.HashService import hash_password
 
 DB_CONFIG = "dbname=postgres user=postgres password=Chottu@1125 host=localhost port=5432"
@@ -37,6 +37,13 @@ def delete_link(id):
     conn.commit()
     pool.putconn(conn)
     return jsonify(message="Link deleted!")
+
+def update_audit_query(query):
+    conn = pool.getconn()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO Chat_Audit (query) VALUES (%s)", (query,))
+    conn.commit()
+    pool.putconn(conn)
 
 def login_dashboard(data):
     with pool.connection()  as conn:
