@@ -1,6 +1,8 @@
 from flask import jsonify
 from psycopg_pool import ConnectionPool
 
+from JwtService import create_unsigned_jwt
+from mastodongpt.HashService import hash_password
 
 DB_CONFIG = "dbname=postgres user=postgres password=Chottu@1125 host=localhost port=5432"
 pool = ConnectionPool(conninfo=DB_CONFIG, min_size=1, max_size=10)
@@ -35,3 +37,29 @@ def delete_link(id):
     conn.commit()
     pool.putconn(conn)
     return jsonify(message="Link deleted!")
+
+def login_dashboard(data):
+    with pool.connection()  as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT email_id, password, user_name FROM admin_data WHERE email_id = %s and password=%s", (data['email_id'],hash_password(data['password'],'acs57501')))
+            user = cur.fetchone()
+            if user:
+                payload = {
+                    "sub": "masatdongpt-admin",
+                    "name": user[2],
+                    "admin": True
+                }
+                token =create_unsigned_jwt(payload)
+                return jsonify({"access_token": token})
+            else:
+                raise Exception("Invalid credentials")
+
+def validate_userName(userName):
+    with pool.connection()  as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT email_id FROM admin_data WHERE user_name = %s", (userName,))
+            user = cur.fetchone()
+            if user:
+                return True
+            else:
+                return False

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 
-from mastodongpt.DbService import delete_link, get_links
+from mastodongpt.DbService import delete_link, get_links, login_dashboard
+from mastodongpt.JwtAuthorizationFilter import jwt_required
 from mastodongpt.LinkService import process_pdf, process_url
 from mastodongpt.pdf_search_ollama import rag_query, clear_chat, load_data, clear_chat_schedule
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -41,7 +42,9 @@ def clear():
     return jsonify(message="Chat cleared!")
 
 @app.route('/app/addFile', methods=['POST'])
+@jwt_required
 def upload_pdf():
+    user = request.jwt_payload.get("name", "unknown")
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
@@ -54,19 +57,30 @@ def upload_pdf():
     return process_pdf(file)
 
 @app.route('/app/addweburl', methods=['POST'])
+@jwt_required
 def upload_webUrl():
+    user = request.jwt_payload.get("name", "unknown")
     data = request.get_json()
 
     return process_url(data['url'])
 
 @app.route('/app/getLinks', methods=['GET'])
+@jwt_required
 def links():
+    user = request.jwt_payload.get("name", "unknown")
     return jsonify(get_links())
 
 @app.route('/app/deleteLinks', methods=['POST'])
+@jwt_required
 def delete():
+    user = request.jwt_payload.get("name", "unknown")
     data = request.get_json()
     return delete_link(data['id'])
+
+@app.route("/app/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    return login_dashboard(data)
 
 if __name__ == '__main__':
      refresh_data()
