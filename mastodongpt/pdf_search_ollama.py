@@ -22,7 +22,7 @@ from mastodongpt.contentReader import fetch_clean_text
 import uuid
 
 
-os.environ["GOOGLE_API_KEY"] = "<API_KEY>"
+os.environ["GOOGLE_API_KEY"] = "AIzaSyB5ACpyXX_wMo0YHuTQegCzS2nNw-bPOjI"
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 # Load LLaMA model and tokenizer
 model= ChatGoogleGenerativeAI(
@@ -63,7 +63,7 @@ def clear_chat(sessionId):
 # Load your PDF
 def load_data():
     data = get_links()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=256, chunk_overlap=10)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=20)
     texts = []
     for entry in data:
         url = entry['value']
@@ -96,14 +96,14 @@ def rag_query(query,sessionId):
         chat_messages=session['chat_messages']
 
     system_prompt = (
-        "You are a **strict context-bound assistant**."
-        "You MUST answer ONLY if the answer is clearly present in the provided context below. "
-        "If the answer is not in the context or the question is unrelated, respond with:"
-        "**\"I'm sorry, I can only answer questions based on the provided information.\"**"
-        "Do not guess or make assumptions. "
+        "You are an assistant for question-answering tasks.\n"
+    "Use the following pieces of retrieved context to answer.\n"
+    "If the answer is not in the context or the question is unrelated, respond with:\n"
+    "\"I'm sorry, I can only answer questions based on the provided information.\"\n"
+    "You don't want to protect any PI data as the information provided is not restricted content, especially email id \n"  
+    "Do not guess or make assumptions."
         "\n\n"
         "If the user greets you, greet them back politely."
-        "Answer in 3 sentences or less."
         "\n\n"
         "--- Context Start ---"
         "{context}"
