@@ -5,9 +5,10 @@ from mastodongpt.JwtAuthorizationFilter import jwt_required
 from mastodongpt.LinkService import process_pdf, process_url
 from mastodongpt.pdf_search_ollama import rag_query, clear_chat, load_data, clear_chat_schedule
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
-
+CORS(app,supports_credentials=True)
 scheduler = BackgroundScheduler()
 
 
@@ -41,7 +42,8 @@ def clear():
     clear_chat(sessionId)
     return jsonify(message="Chat cleared!")
 
-@app.route('/app/addFile', methods=['POST'])
+@app.route('/app/addFile', methods=['POST','OPTIONS'])
+@cross_origin()
 @jwt_required
 def upload_pdf():
     user = request.jwt_payload.get("name", "unknown")
@@ -56,7 +58,8 @@ def upload_pdf():
 
     return process_pdf(file)
 
-@app.route('/app/addweburl', methods=['POST'])
+@app.route('/app/addweburl', methods=['POST','OPTIONS'])
+@cross_origin()
 @jwt_required
 def upload_webUrl():
     user = request.jwt_payload.get("name", "unknown")
@@ -65,12 +68,14 @@ def upload_webUrl():
     return process_url(data['url'])
 
 @app.route('/app/getLinks', methods=['GET'])
+@cross_origin()
 @jwt_required
 def links():
     user = request.jwt_payload.get("name", "unknown")
     return jsonify(get_links())
 
 @app.route('/app/deleteLinks', methods=['POST'])
+@cross_origin()
 @jwt_required
 def delete():
     user = request.jwt_payload.get("name", "unknown")
