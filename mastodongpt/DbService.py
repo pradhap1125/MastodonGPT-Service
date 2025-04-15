@@ -4,7 +4,7 @@ from psycopg_pool import ConnectionPool
 from mastodongpt.JwtService import create_unsigned_jwt
 from mastodongpt.HashService import hash_password
 
-DB_CONFIG = "dbname=postgres user=postgres password=Chottu@1125 host=localhost port=5432"
+DB_CONFIG = "dbname=postgres user=postgres password=250620 host=localhost port=5432"
 pool = ConnectionPool(conninfo=DB_CONFIG, min_size=1, max_size=10)
 
 def save_link(value, type):
@@ -12,7 +12,10 @@ def save_link(value, type):
     cur = conn.cursor()
     cur.execute("INSERT INTO Link_t (value, type) VALUES (%s, %s)", (value, type))
     conn.commit()
+    cur.execute(("SELECT id FROM Link_t WHERE value = %s AND type = %s"), (value, type))
+    unique_id = cur.fetchone()[0]
     pool.putconn(conn)
+    return unique_id
 
 def get_links():
 
