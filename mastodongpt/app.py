@@ -24,10 +24,6 @@ scheduler.add_job(clear_storage, 'interval', seconds=600)
 
 scheduler.start()
 
-@app.route('/')
-def home():
-    return render_template('chat.html')
-
 @app.route('/app/chat', methods=['POST'])
 def chat():
     data = request.get_json()
