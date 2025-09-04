@@ -22,7 +22,7 @@ from mastodongpt.contentReader import fetch_clean_text
 import uuid
 
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyB5ACpyXX_wMo0YHuTQegCzS2nNw-bPOjI"
+os.environ["GOOGLE_API_KEY"] = "<API_KEY>"
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 # Load LLaMA model and tokenizer
 model= ChatGoogleGenerativeAI(
