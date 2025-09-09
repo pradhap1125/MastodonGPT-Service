@@ -36,7 +36,7 @@ LLM integration (Gemini) for generating context-aware answers.
 
 Context persistence for handling follow-up questions.
 
-# 🏗️ Architecture
+#  Architecture
 
 Backend: Python (Flask/FastAPI)
 
