@@ -1,6 +1,67 @@
 # llm-local-chat
 A simple chat application using Lang-Chain and RAG approach using llama3 
 
+# Overview
+
+Mastodon-GPT is a university-focused chatbot that integrates Large Language Models (LLMs) with LangChain and Retrieval-Augmented Generation (RAG).
+
+It automatically fetches and processes university web content and uploaded documents, stores them in a vector database (FAISS), and allows students or visitors to query the system through a chatbot interface. Responses are context-aware and grounded in the latest available university information.
+
+Admins can easily manage knowledge sources (links/documents) via a secure dashboard, while students benefit from an AI-powered Q&A experience.
+
+# Features
+🔹 User Features
+
+Interactive chatbot integrated into university web pages.
+
+Context-aware responses based on university documents & links.
+
+Ability to clear chat history within sessions.
+
+🔹 Admin Features
+
+Secure login with role-based access control.
+
+Upload/remove web URLs and documents to enrich chatbot knowledge.
+
+Dashboard for managing content sources.
+
+🔹 System Features
+
+Automated content pipeline: Scheduled Python script fetches and chunks university data weekly.
+
+Semantic search with embeddings stored in FAISS.
+
+LLM integration (Gemini) for generating context-aware answers.
+
+Context persistence for handling follow-up questions.
+
+# 🏗️ Architecture
+
+Backend: Python (Flask/FastAPI)
+
+Database: PostgreSQL (metadata + admin details)
+
+Vector DB: FAISS (semantic search)
+
+Frameworks & Models:
+
+LangChain → RAG pipeline
+
+SentenceTransformer (paraphrase-multilingual) → Embeddings
+
+Gemini-2.0-flash-thinking-exp-01-21 → LLM response generation
+
+# Workflow:
+
+Admin uploads links/docs → processed → chunked → embedded → stored in FAISS.
+
+Scheduler updates knowledge base weekly.
+
+User asks a query → embedding model retrieves relevant context.
+
+Context + query passed to LLM → response generated.
+
 ## Ollama setup and Installation
 ```bash
 download and install : https://ollama.com/download
